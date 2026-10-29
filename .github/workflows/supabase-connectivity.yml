@@ -1,0 +1,47 @@
+# Test de conectividad Supabase ⇄ GitHub Actions
+#
+# Propósito: validar ANTES de escribir el crawler el riesgo #1 de Fase 1
+# (docs/12-deployment.md): el endpoint de DB de Supabase Free es IPv6-only
+# y los runners estándar de Actions son IPv4. Si este job falla con un error
+# de conexión/timeout, aplicamos un fallback (pooler, IPv4 add-on, o ejecutar
+# el crawl en otro sitio) en lugar de descubrirlo a media implementación.
+#
+# Setup (una vez):
+#   1. Crear proyecto Supabase Free + ejecutar scripts/supabase_bootstrap.sql
+#   2. Repo → Settings → Secrets and variables → Actions → New repository secret:
+#        Name: SUPABASE_DB_URL
+#        Value: <connection string postgresql del panel de Supabase>
+#   3. Actions → este workflow → Run workflow
+#
+# NOTA de ubicación: igual que ci.yml — si el repo es `dirtbag/` completo,
+# mueve el archivo a `dirtbag/.github/workflows/` y ajusta working-directory.
+
+name: Supabase connectivity
+
+on:
+  workflow_dispatch:
+
+jobs:
+  ping-db:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check SUPABASE_DB_URL secret
+        run: |
+          if [ -z "${{ secrets.SUPABASE_DB_URL }}" ]; then
+            echo "::error::Secret SUPABASE_DB_URL no definido (ver encabezado de este workflow)"
+            exit 1
+          fi
+
+      - name: Ping PostgreSQL + PostGIS
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          psql "$SUPABASE_DB_URL" -tAc "select 'connected: ' || version();" || {
+            echo "::error::Fallo de conexión. ¿IPv6? Ver docs/12-deployment.md → Riesgo #1 y sus fallbacks."
+            exit 1
+          }
+          psql "$SUPABASE_DB_URL" -tAc "select 'postgis: ' || postgis_version();"
+
+      - name: Reporte
+        run: |
+          echo "OK — Actions puede alcanzar Supabase. Fase 1 desbloqueada." >> "$GITHUB_STEP_SUMMARY"

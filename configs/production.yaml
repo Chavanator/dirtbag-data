@@ -1,0 +1,31 @@
+# Production configuration — DirtBag Data
+# Secrets come from the environment; never commit real credentials.
+
+database:
+  url: ${DIRTBAG_DATABASE_URL}
+
+storage:
+  raw_path: ${DIRTBAG_RAW_STORAGE_PATH:-./data/local/raw}
+
+http:
+  timeout: 20
+  max_retries: 3
+  rate_limit_seconds: 2.0
+  user_agent: "DirtBagBot/0.1 (+https://dirtbag.vercel.app)"
+
+crawlers:
+  sources:
+    thecrag:
+      enabled: true
+      base_url: https://www.thecrag.com
+      seeds:
+        el-salto: https://www.thecrag.com/en/climbing/mexico/el-salto
+    mountain_project:
+      enabled: false
+      base_url: https://www.mountainproject.com
+    eighta:
+      enabled: false
+      base_url: https://www.8a.nu
+
+logging:
+  level: INFO

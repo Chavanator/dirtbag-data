@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: dirtbag-postgres
+    environment:
+      POSTGRES_USER: dirtbag
+      POSTGRES_PASSWORD: dirtbag
+      POSTGRES_DB: dirtbag
+    ports:
+      # 5433: el 5432 ya lo usa otro proyecto local (postgres ajeno)
+      - "5433:5432"
+    volumes:
+      - dirtbag-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dirtbag -d dirtbag"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  dirtbag-pgdata:
